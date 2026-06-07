@@ -4,15 +4,18 @@ const fs = require('fs');
 const path = require('path');
 
 // ========== WebSocket Protocol (RFC 6455) ==========
+// 外部依存なしで動くよう、Node 標準ライブラリだけで最小限の WebSocket を実装している。
 
 const OPCODES = { TEXT: 0x01, CLOSE: 0x08, PING: 0x09, PONG: 0x0A };
 const WS_MAGIC = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
 function computeAcceptKey(clientKey) {
+  // WebSocket ハンドシェイクで返す Sec-WebSocket-Accept を計算する。
   return crypto.createHash('sha1').update(clientKey + WS_MAGIC).digest('base64');
 }
 
 function encodeFrame(opcode, payload) {
+  // サーバーからブラウザへ送る WebSocket フレームを組み立てる。
   const fin = 0x80;
   const len = payload.length;
   let header;
@@ -37,6 +40,7 @@ function encodeFrame(opcode, payload) {
 }
 
 function decodeFrame(buffer) {
+  // ブラウザから届いた WebSocket フレームを読み取り、マスクを解除する。
   if (buffer.length < 2) return null;
 
   const secondByte = buffer[1];
@@ -72,6 +76,7 @@ function decodeFrame(buffer) {
 }
 
 // ========== Configuration ==========
+// ポート、保存ディレクトリ、バインド先は環境変数で上書きできる。
 
 const PORT = process.env.BRAINSTORM_PORT || (49152 + Math.floor(Math.random() * 16383));
 const HOST = process.env.BRAINSTORM_HOST || '127.0.0.1';
@@ -88,6 +93,7 @@ const MIME_TYPES = {
 };
 
 // ========== Templates and Constants ==========
+// 画面未作成時の待機ページと、フレーム/ヘルパーのテンプレートを読み込む。
 
 const WAITING_PAGE = `<!DOCTYPE html>
 <html>
@@ -105,15 +111,18 @@ const helperInjection = '<script>\n' + helperScript + '\n</script>';
 // ========== Helper Functions ==========
 
 function isFullDocument(html) {
+  // 完全な HTML 文書ならそのまま配信し、断片ならフレームで包む。
   const trimmed = html.trimStart().toLowerCase();
   return trimmed.startsWith('<!doctype') || trimmed.startsWith('<html');
 }
 
 function wrapInFrame(content) {
+  // 断片 HTML を共通フレームの CONTENT プレースホルダーへ差し込む。
   return frameTemplate.replace('<!-- CONTENT -->', content);
 }
 
 function getNewestScreen() {
+  // content ディレクトリ内で最後に更新された HTML を表示対象にする。
   const files = fs.readdirSync(CONTENT_DIR)
     .filter(f => f.endsWith('.html'))
     .map(f => {
@@ -127,6 +136,7 @@ function getNewestScreen() {
 // ========== HTTP Request Handler ==========
 
 function handleRequest(req, res) {
+  // ルートでは最新画面を返し、/files/ では content 内の静的ファイルを返す。
   touchActivity();
   if (req.method === 'GET' && req.url === '/') {
     const screenFile = getNewestScreen();
@@ -165,6 +175,7 @@ function handleRequest(req, res) {
 const clients = new Set();
 
 function handleUpgrade(req, socket) {
+  // HTTP 接続を WebSocket に昇格させ、ブラウザとの双方向通信を始める。
   const key = req.headers['sec-websocket-key'];
   if (!key) { socket.destroy(); return; }
 
@@ -222,6 +233,7 @@ function handleUpgrade(req, socket) {
 }
 
 function handleMessage(text) {
+  // ブラウザから届いたクリック/選択イベントを標準出力と state/events に記録する。
   let event;
   try {
     event = JSON.parse(text);
@@ -238,6 +250,7 @@ function handleMessage(text) {
 }
 
 function broadcast(msg) {
+  // 接続中の全ブラウザへ reload などの通知を送る。
   const frame = encodeFrame(OPCODES.TEXT, Buffer.from(JSON.stringify(msg)));
   for (const socket of clients) {
     try { socket.write(frame); } catch (e) { clients.delete(socket); }
@@ -250,6 +263,7 @@ const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 let lastActivity = Date.now();
 
 function touchActivity() {
+  // アイドルタイムアウト判定用に、最後の利用時刻を更新する。
   lastActivity = Date.now();
 }
 
@@ -260,6 +274,7 @@ const debounceTimers = new Map();
 // ========== Server Startup ==========
 
 function startServer() {
+  // セッション用ディレクトリを用意し、HTTP/WebSocket サーバーとファイル監視を開始する。
   if (!fs.existsSync(CONTENT_DIR)) fs.mkdirSync(CONTENT_DIR, { recursive: true });
   if (!fs.existsSync(STATE_DIR)) fs.mkdirSync(STATE_DIR, { recursive: true });
 
@@ -274,6 +289,7 @@ function startServer() {
   server.on('upgrade', handleUpgrade);
 
   const watcher = fs.watch(CONTENT_DIR, (eventType, filename) => {
+    // 新しい HTML 画面が追加/更新されたら、ブラウザへ reload を通知する。
     if (!filename || !filename.endsWith('.html')) return;
 
     if (debounceTimers.has(filename)) clearTimeout(debounceTimers.get(filename));
@@ -299,6 +315,7 @@ function startServer() {
   watcher.on('error', (err) => console.error('fs.watch error:', err.message));
 
   function shutdown(reason) {
+    // サーバー終了時に状態ファイルを更新し、監視と HTTP サーバーを閉じる。
     console.log(JSON.stringify({ type: 'server-stopped', reason }));
     const infoFile = path.join(STATE_DIR, 'server-info');
     if (fs.existsSync(infoFile)) fs.unlinkSync(infoFile);
@@ -312,6 +329,7 @@ function startServer() {
   }
 
   function ownerAlive() {
+    // 起動元ハーネスのプロセスがまだ生きているか確認する。
     if (!ownerPid) return true;
     try { process.kill(ownerPid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
   }
@@ -348,6 +366,7 @@ function startServer() {
 }
 
 if (require.main === module) {
+  // 直接実行された場合のみサーバーを起動する。テスト時は関数だけ import できる。
   startServer();
 }
 

@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 # SessionStart hook for superpowers plugin
+# Superpowers プラグインのセッション開始時に実行される hook。
+# 役割: using-superpowers スキルの内容を読み込み、各ハーネス向けの JSON で追加コンテキストとして渡す。
 
 set -euo pipefail
 
 # Determine plugin root directory
+# このスクリプト自身の場所から、プラグインのルートディレクトリを特定する。
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # Check if legacy skills directory exists and build warning
+# 古い Superpowers のカスタムスキル置き場が残っている場合、
+# セッション開始時の追加コンテキストに警告メッセージを含める。
 warning_message=""
 legacy_skills_dir="${HOME}/.config/superpowers/skills"
 if [ -d "$legacy_skills_dir" ]; then
@@ -15,11 +20,14 @@ if [ -d "$legacy_skills_dir" ]; then
 fi
 
 # Read using-superpowers content
+# セッション開始時に AI へ渡すため、using-superpowers スキル本文を読む。
+# 読み込みに失敗した場合も hook 全体を落とさず、エラーメッセージをコンテキストに入れる。
 using_superpowers_content=$(cat "${PLUGIN_ROOT}/skills/using-superpowers/SKILL.md" 2>&1 || echo "Error reading using-superpowers skill")
 
 # Escape string for JSON embedding using bash parameter substitution.
 # Each ${s//old/new} is a single C-level pass - orders of magnitude
 # faster than the character-by-character loop this replaces.
+# JSON 文字列として安全に埋め込めるよう、特殊文字をエスケープする。
 escape_for_json() {
     local s="$1"
     s="${s//\\/\\\\}"
@@ -30,8 +38,12 @@ escape_for_json() {
     printf '%s' "$s"
 }
 
+# スキル本文と警告文を JSON 埋め込み用に変換する。
 using_superpowers_escaped=$(escape_for_json "$using_superpowers_content")
 warning_escaped=$(escape_for_json "$warning_message")
+
+# 実際に注入するセッションコンテキスト。
+# AI に「Superpowers が利用可能で、まず using-superpowers を読む必要がある」と伝える。
 session_context="<EXTREMELY_IMPORTANT>\nYou have superpowers.\n\n**Below is the full content of your 'superpowers:using-superpowers' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${using_superpowers_escaped}\n\n${warning_escaped}\n</EXTREMELY_IMPORTANT>"
 
 # Output context injection as JSON.
@@ -43,14 +55,19 @@ session_context="<EXTREMELY_IMPORTANT>\nYou have superpowers.\n\n**Below is the 
 #
 # Uses printf instead of heredoc to work around bash 5.3+ heredoc hang.
 # See: https://github.com/obra/superpowers/issues/571
+# 実行元のハーネスごとに期待する JSON フィールド名が違うため、
+# 環境変数を見て出力形式を切り替える。
 if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
   # Cursor sets CURSOR_PLUGIN_ROOT (may also set CLAUDE_PLUGIN_ROOT)
+  # Cursor 向け: snake_case の additional_context を使う。
   printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
 elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -z "${COPILOT_CLI:-}" ]; then
   # Claude Code sets CLAUDE_PLUGIN_ROOT without COPILOT_CLI
+  # Claude Code 向け: hookSpecificOutput.additionalContext に入れる。
   printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$session_context"
 else
   # Copilot CLI (sets COPILOT_CLI=1) or unknown platform — SDK standard format
+  # Copilot CLI または不明な環境向け: SDK 標準の top-level additionalContext を使う。
   printf '{\n  "additionalContext": "%s"\n}\n' "$session_context"
 fi
 

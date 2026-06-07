@@ -1,17 +1,22 @@
 (function() {
+  // Brainstorming のブラウザ伴走画面で動くクライアント側ヘルパー。
+  // サーバーとの WebSocket 接続、クリックイベント送信、選択状態の表示更新を担当する。
   const WS_URL = 'ws://' + window.location.host;
   let ws = null;
   let eventQueue = [];
 
   function connect() {
+    // 表示中ページを配信しているサーバーへ WebSocket で接続する。
     ws = new WebSocket(WS_URL);
 
     ws.onopen = () => {
+      // 接続前に発生したイベントをまとめて送信する。
       eventQueue.forEach(e => ws.send(JSON.stringify(e)));
       eventQueue = [];
     };
 
     ws.onmessage = (msg) => {
+      // サーバーから reload 指示が来たら、最新の画面に更新する。
       const data = JSON.parse(msg.data);
       if (data.type === 'reload') {
         window.location.reload();
@@ -19,11 +24,13 @@
     };
 
     ws.onclose = () => {
+      // サーバー再起動や一時切断に備えて、自動で再接続する。
       setTimeout(connect, 1000);
     };
   }
 
   function sendEvent(event) {
+    // ユーザー操作に時刻を付けて送信する。未接続ならキューに積む。
     event.timestamp = Date.now();
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(event));
@@ -33,6 +40,7 @@
   }
 
   // Capture clicks on choice elements
+  // data-choice 属性を持つ要素のクリックを、選択イベントとしてサーバーへ送る。
   document.addEventListener('click', (e) => {
     const target = e.target.closest('[data-choice]');
     if (!target) return;
@@ -45,6 +53,7 @@
     });
 
     // Update indicator bar (defer so toggleSelect runs first)
+    // toggleSelect による selected クラス更新後、下部バーに選択状況を表示する。
     setTimeout(() => {
       const indicator = document.getElementById('indicator-text');
       if (!indicator) return;
@@ -62,9 +71,11 @@
   });
 
   // Frame UI: selection tracking
+  // フレーム側から参照できる現在の選択値。
   window.selectedChoice = null;
 
   window.toggleSelect = function(el) {
+    // 単一選択なら他の選択を解除し、複数選択ならクリックした項目をトグルする。
     const container = el.closest('.options') || el.closest('.cards');
     const multi = container && container.dataset.multiselect !== undefined;
     if (container && !multi) {
@@ -79,6 +90,7 @@
   };
 
   // Expose API for explicit use
+  // カスタム画面から明示的にイベント送信できる小さな API を公開する。
   window.brainstorm = {
     send: sendEvent,
     choice: (value, metadata = {}) => sendEvent({ type: 'choice', value, ...metadata })

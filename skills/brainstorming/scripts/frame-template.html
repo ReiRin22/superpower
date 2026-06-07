@@ -6,6 +6,7 @@
   <style>
     /*
      * BRAINSTORM COMPANION FRAME TEMPLATE
+     * Brainstorming のブラウザ伴走画面で、断片 HTML を包む共通フレーム。
      *
      * This template provides a consistent frame with:
      * - OS-aware light/dark theming
@@ -20,6 +21,7 @@
     html, body { height: 100%; overflow: hidden; }
 
     /* ===== THEME VARIABLES ===== */
+    /* OS の light/dark 設定に合わせて、画面全体で使う色を定義する。 */
     :root {
       --bg-primary: #f5f5f7;
       --bg-secondary: #ffffff;
@@ -63,6 +65,7 @@
     }
 
     /* ===== FRAME STRUCTURE ===== */
+    /* ヘッダー、スクロール可能な本文、下部の選択インジケーターを固定レイアウトにする。 */
     .header {
       background: var(--bg-secondary);
       padding: 0.5rem 1.5rem;
@@ -96,6 +99,7 @@
     }
 
     /* ===== TYPOGRAPHY ===== */
+    /* フレーム内コンテンツで使う基本的な見出し・補助テキストのスタイル。 */
     h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
     h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; }
     .subtitle { color: var(--text-secondary); margin-bottom: 1.5rem; }
@@ -103,6 +107,7 @@
     .label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
 
     /* ===== OPTIONS (for A/B/C choices) ===== */
+    /* 文章ベースの A/B/C 選択肢を表示するための部品。 */
     .options { display: flex; flex-direction: column; gap: 0.75rem; }
     .option {
       background: var(--bg-secondary);
@@ -131,6 +136,7 @@
     .option .content p { color: var(--text-secondary); font-size: 0.85rem; margin: 0; }
 
     /* ===== CARDS (for showing designs/mockups) ===== */
+    /* デザイン案やモックアップをカード状に並べて比較するための部品。 */
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
     .card {
       background: var(--bg-secondary);
@@ -148,6 +154,7 @@
     .card-body p { color: var(--text-secondary); font-size: 0.85rem; }
 
     /* ===== MOCKUP CONTAINER ===== */
+    /* 画面プレビューやワイヤーフレームを囲むための部品。 */
     .mockup {
       background: var(--bg-secondary);
       border: 1px solid var(--border);
@@ -165,10 +172,12 @@
     .mockup-body { padding: 1.5rem; }
 
     /* ===== SPLIT VIEW (side-by-side comparison) ===== */
+    /* 2 つの案を左右に並べる比較レイアウト。狭い画面では縦並びにする。 */
     .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
     @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
 
     /* ===== PROS/CONS ===== */
+    /* 良い点/懸念点を並べて見せるための補助レイアウト。 */
     .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
     .pros, .cons { background: var(--bg-secondary); border-radius: 8px; padding: 1rem; }
     .pros h4 { color: var(--success); font-size: 0.85rem; margin-bottom: 0.5rem; }
@@ -177,6 +186,7 @@
     .pros li, .cons li { margin-bottom: 0.25rem; }
 
     /* ===== PLACEHOLDER (for mockup areas) ===== */
+    /* まだ中身を描き込まないモック領域のプレースホルダー。 */
     .placeholder {
       background: var(--bg-tertiary);
       border: 2px dashed var(--border);
@@ -187,6 +197,7 @@
     }
 
     /* ===== INLINE MOCKUP ELEMENTS ===== */
+    /* 簡易ワイヤーフレームをすばやく作るための小さな UI 部品。 */
     .mock-nav { background: var(--accent); color: white; padding: 0.75rem 1rem; display: flex; gap: 1.5rem; font-size: 0.9rem; }
     .mock-sidebar { background: var(--bg-tertiary); padding: 1rem; min-width: 180px; }
     .mock-content { padding: 1.5rem; flex: 1; }
