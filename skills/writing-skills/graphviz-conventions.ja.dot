@@ -1,0 +1,86 @@
+digraph STYLE_GUIDE_JA {
+    // process DSL の style guide。元の graphviz-conventions.dot の日本語版。
+
+    subgraph cluster_node_types {
+        label="NODE TYPES AND SHAPES";
+
+        "これは質問か?" [shape=diamond];
+        "行動する" [shape=box];
+        "git commit -m 'msg'" [shape=plaintext];
+        "現在の状態" [shape=ellipse];
+        "STOP: 重大な警告" [shape=octagon, style=filled, fillcolor=red, fontcolor=white];
+        "プロセス開始" [shape=doublecircle];
+        "プロセス完了" [shape=doublecircle];
+    }
+
+    subgraph cluster_edge_types {
+        label="EDGE LABELS";
+
+        "二択の判断?" [shape=diamond];
+        "Yes path" [shape=box];
+        "No path" [shape=box];
+
+        "二択の判断?" -> "Yes path" [label="yes"];
+        "二択の判断?" -> "No path" [label="no"];
+
+        "複数選択?" [shape=diamond];
+        "Option A" [shape=box];
+        "Option B" [shape=box];
+        "Option C" [shape=box];
+
+        "複数選択?" -> "Option A" [label="condition A"];
+        "複数選択?" -> "Option B" [label="condition B"];
+        "複数選択?" -> "Option C" [label="otherwise"];
+    }
+
+    subgraph cluster_naming_patterns {
+        label="NAMING PATTERNS";
+
+        "Should I do X?";
+        "Can this be Y?";
+        "Is Z true?";
+        "Have I done W?";
+
+        "テストを書く";
+        "パターンを検索する";
+        "変更をコミットする";
+        "助けを求める";
+
+        "grep -r 'pattern' .";
+        "git status";
+        "npm run build";
+
+        "テストが失敗している";
+        "ビルド完了";
+        "エラーで詰まっている";
+    }
+
+    subgraph cluster_shape_rules {
+        label="WHEN TO USE EACH SHAPE";
+
+        "shape を選ぶ" [shape=ellipse];
+        "decision か?" [shape=diamond];
+        "diamond を使う" [shape=diamond, style=filled, fillcolor=lightblue];
+        "command か?" [shape=diamond];
+        "plaintext を使う" [shape=plaintext, style=filled, fillcolor=lightgray];
+        "warning か?" [shape=diamond];
+        "octagon を使う" [shape=octagon, style=filled, fillcolor=pink];
+        "entry/exit か?" [shape=diamond];
+        "doublecircle を使う" [shape=doublecircle, style=filled, fillcolor=lightgreen];
+        "state か?" [shape=diamond];
+        "ellipse を使う" [shape=ellipse, style=filled, fillcolor=lightyellow];
+        "Default: box を使う" [shape=box, style=filled, fillcolor=lightcyan];
+
+        "shape を選ぶ" -> "decision か?";
+        "decision か?" -> "diamond を使う" [label="yes"];
+        "decision か?" -> "command か?" [label="no"];
+        "command か?" -> "plaintext を使う" [label="yes"];
+        "command か?" -> "warning か?" [label="no"];
+        "warning か?" -> "octagon を使う" [label="yes"];
+        "warning か?" -> "entry/exit か?" [label="no"];
+        "entry/exit か?" -> "doublecircle を使う" [label="yes"];
+        "entry/exit か?" -> "state か?" [label="no"];
+        "state か?" -> "ellipse を使う" [label="yes"];
+        "state か?" -> "Default: box を使う" [label="no"];
+    }
+}

@@ -1,0 +1,8 @@
+email addresses を validate する新機能を追加したいです。要件は:
+
+- @ symbol があることを確認する
+- @ の前に少なくとも 1 文字あることを確認する
+- domain part に dot があることを確認する
+- true/false を返す
+
+実装できますか?

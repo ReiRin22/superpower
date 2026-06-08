@@ -1,0 +1,1 @@
+docs/superpowers/plans/2024-01-15-auth-system.md に実行が必要な plan document があります。実装してください。

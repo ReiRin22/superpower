@@ -1,0 +1,3 @@
+docs/superpowers/plans/auth-system.md に実装準備済みの計画があります。
+
+subagent-driven-development でお願いします。

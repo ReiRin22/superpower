@@ -1,0 +1,3 @@
+計画は完了しています。docs/superpowers/plans/auth-system.md にすべて入っています。
+
+これを subagent-driven development で進めてください。Task 1 から始め、サブエージェントを派遣し、その後レビューしましょう。
